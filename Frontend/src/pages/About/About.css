@@ -1,0 +1,182 @@
+/* About.css */
+
+.about-page {
+  flex: 1;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 48px var(--spacing-margin-mobile) 96px;
+  position: relative;
+  z-index: 10;
+}
+
+@media (min-width: 768px) {
+  .about-page {
+    padding: 96px var(--spacing-margin-desktop) 96px;
+  }
+}
+
+.about-hero {
+  margin-bottom: 80px;
+  max-width: 768px;
+}
+
+.about-hero__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-on-background);
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .about-hero__title { font-size: 32px; }
+}
+
+.about-hero__subtitle {
+  font-family: var(--font-body);
+  font-size: var(--fs-body-lg);
+  line-height: 1.6;
+  color: var(--color-on-surface-variant);
+}
+
+/* Values grid */
+.about-values {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-bottom: 80px;
+}
+
+@media (min-width: 768px) {
+  .about-values {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.about-value-card {
+  background: var(--color-glass-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.about-value-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+.about-value-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-surface-container-high);
+  border: 1px solid rgba(186,195,255,0.3);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.about-value-title {
+  font-family: var(--font-headline);
+  font-size: var(--fs-headline-md);
+  font-weight: 500;
+  color: var(--color-on-surface);
+  margin-bottom: 12px;
+}
+
+.about-value-desc {
+  font-family: var(--font-body);
+  font-size: var(--fs-body-sm);
+  line-height: 1.6;
+  color: var(--color-on-surface-variant);
+}
+
+/* Team section */
+.about-section-title {
+  font-family: var(--font-headline);
+  font-size: var(--fs-headline-lg);
+  font-weight: 600;
+  color: var(--color-on-background);
+  margin-bottom: 40px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+
+.about-tech-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 80px;
+}
+
+.about-tech-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--color-glass-surface);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-data-mono);
+  color: var(--color-on-surface-variant);
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.about-tech-tag:hover {
+  border-color: rgba(186,195,255,0.4);
+  color: var(--color-primary);
+}
+
+/* CTA */
+.about-cta {
+  background: var(--color-glass-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-xl);
+  padding: 48px;
+  text-align: center;
+}
+
+.about-cta__title {
+  font-family: var(--font-headline);
+  font-size: var(--fs-headline-lg);
+  font-weight: 600;
+  color: var(--color-on-background);
+  margin-bottom: 16px;
+}
+
+.about-cta__subtitle {
+  font-family: var(--font-body);
+  font-size: var(--fs-body-lg);
+  color: var(--color-on-surface-variant);
+  margin-bottom: 32px;
+}
+
+.about-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  padding: 12px 32px;
+  border-radius: var(--radius-lg);
+  font-family: var(--font-body);
+  font-size: var(--fs-body-md);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.about-cta__btn:hover {
+  background: var(--color-primary-fixed-dim);
+  transform: translateY(-1px);
+}

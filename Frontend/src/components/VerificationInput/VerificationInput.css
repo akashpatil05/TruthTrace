@@ -1,0 +1,117 @@
+/* VerificationInput.css - Matches Stitch glass console */
+
+.verification-console {
+  width: 100%;
+  background: var(--color-glass-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  padding: 24px;
+  text-align: left;
+}
+
+/* Segmented control */
+.verification-console__tabs {
+  display: inline-flex;
+  background: rgba(30, 32, 36, 0.5);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  margin-bottom: 24px;
+  gap: 2px;
+}
+
+.verification-console__tab {
+  padding: 8px 16px;
+  font-size: var(--fs-body-sm);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: none;
+}
+
+.verification-console__tab:hover {
+  color: var(--color-on-background);
+}
+
+.verification-console__tab.active {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Textarea */
+.verification-console__input-wrap {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.verification-console__textarea {
+  width: 100%;
+  background: rgba(26, 28, 32, 0.5);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  font-family: var(--font-body);
+  font-size: var(--fs-body-md);
+  line-height: 1.6;
+  color: var(--color-on-background);
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-height: 120px;
+}
+
+.verification-console__textarea::placeholder {
+  color: var(--color-outline);
+}
+
+.verification-console__textarea:focus {
+  border-color: rgba(186, 195, 255, 0.5);
+  box-shadow: 0 0 0 2px rgba(186, 195, 255, 0.15);
+}
+
+.verification-console__hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-outline);
+  display: block;
+  margin-top: 8px;
+}
+
+/* Action bar */
+.verification-console__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.verification-console__submit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  padding: 12px 32px;
+  border-radius: var(--radius-lg);
+  font-family: var(--font-body);
+  font-size: var(--fs-body-md);
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.verification-console__submit:hover {
+  background: var(--color-primary-fixed-dim);
+  transform: translateY(-1px);
+}
+
+.verification-console__submit:active {
+  transform: translateY(0);
+}

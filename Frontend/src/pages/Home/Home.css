@@ -1,0 +1,17 @@
+/* Home.css - Page layout for the home route */
+
+.home-main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 48px var(--spacing-margin-mobile) 96px;
+  position: relative;
+  z-index: 10;
+}
+
+@media (min-width: 768px) {
+  .home-main {
+    padding: 96px var(--spacing-margin-desktop) 96px;
+  }
+}

@@ -1,0 +1,65 @@
+/* Footer.css - Matches Stitch dark glass footer */
+
+.footer {
+  background: var(--color-glass-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--color-glass-border);
+  margin-top: auto;
+  position: relative;
+  z-index: 10;
+}
+
+.footer__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 32px var(--spacing-margin-mobile);
+}
+
+@media (min-width: 768px) {
+  .footer__inner {
+    flex-direction: row;
+    gap: 0;
+    padding: 32px var(--spacing-margin-desktop);
+  }
+}
+
+.footer__copy {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label-caps);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-variant);
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .footer__copy {
+    text-align: left;
+  }
+}
+
+.footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+}
+
+.footer__link {
+  font-family: var(--font-body);
+  font-size: var(--fs-body-sm);
+  color: var(--color-on-surface-variant);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+
+.footer__link:hover {
+  color: var(--color-primary);
+}

@@ -1,0 +1,120 @@
+/* TRUTHTRACE - Global Design Tokens
+   Matches Stitch project 8112478419168842493 - Dark Glass Morphism */
+
+:root {
+  --color-background: #111318;
+  --color-surface: #111318;
+  --color-surface-container: #1e2024;
+  --color-surface-container-low: #1a1c20;
+  --color-surface-container-high: #282a2e;
+  --color-surface-bright: #37393e;
+  --color-surface-variant: #333539;
+  --color-glass-surface: rgba(15, 23, 42, 0.7);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-primary: #bac3ff;
+  --color-primary-container: #3452e1;
+  --color-primary-fixed-dim: #bac3ff;
+  --color-on-primary: #00208e;
+  --color-on-primary-container: #d9dcff;
+  --color-on-background: #e2e2e8;
+  --color-on-surface: #e2e2e8;
+  --color-on-surface-variant: #c5c5d7;
+  --color-text-muted: #94A3B8;
+  --color-outline: #8e8fa1;
+  --color-outline-variant: #444655;
+  --color-verdict-true: #00FF9D;
+  --color-verdict-false: #FF4D4D;
+  --color-verdict-misleading: #FFB800;
+  --font-display: 'IBM Plex Sans', sans-serif;
+  --font-headline: 'IBM Plex Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --fs-display: 48px;
+  --fs-headline-lg: 32px;
+  --fs-headline-md: 24px;
+  --fs-body-lg: 18px;
+  --fs-body-md: 16px;
+  --fs-body-sm: 14px;
+  --fs-data-mono: 13px;
+  --fs-label-caps: 12px;
+  --spacing-margin-desktop: 64px;
+  --spacing-margin-mobile: 16px;
+  --container-max: 1280px;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(52, 82, 225, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(186, 195, 255, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+textarea, input {
+  font-family: var(--font-body);
+}
+
+.container {
+  max-width: var(--container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-margin-mobile);
+  padding-right: var(--spacing-margin-mobile);
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding-left: var(--spacing-margin-desktop);
+    padding-right: var(--spacing-margin-desktop);
+  }
+}
