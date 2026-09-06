@@ -8,8 +8,8 @@ python-dotenv>=1.0.1
 # Tokenization & Text Processing
 tiktoken>=0.7.0
 
-# Vector Search & Embeddings
-sentence-transformers>=3.0.0
+# Lightweight Vector Search & ONNX Embeddings (Fits in 512MB RAM)
+fastembed>=0.3.0
 faiss-cpu>=1.10.0
 
 # HTTP & Testing
