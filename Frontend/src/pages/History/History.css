@@ -131,6 +131,18 @@
   color: var(--color-verdict-true);
 }
 
+.history-verdict__badge--misleading {
+  background: rgba(255,184,0,0.1);
+  border: 1px solid rgba(255,184,0,0.3);
+  color: var(--color-verdict-misleading);
+}
+
+.history-verdict__badge--insufficient {
+  background: rgba(148,163,184,0.1);
+  border: 1px solid rgba(148,163,184,0.3);
+  color: var(--color-text-muted);
+}
+
 .history-verdict__badge-label {
   font-family: var(--font-mono);
   font-size: var(--fs-label-caps);
@@ -189,6 +201,8 @@
 
 .history-verdict__pct--false { color: var(--color-verdict-false); }
 .history-verdict__pct--true  { color: var(--color-verdict-true);  }
+.history-verdict__pct--misleading { color: var(--color-verdict-misleading); }
+.history-verdict__pct--insufficient { color: var(--color-text-muted); }
 
 .history-verdict__pct-label {
   font-family: var(--font-mono);
@@ -334,6 +348,8 @@
 
 .history-evidence--false { border-left-color: var(--color-verdict-false); }
 .history-evidence--true  { border-left-color: var(--color-verdict-true);  }
+.history-evidence--misleading { border-left-color: var(--color-verdict-misleading); }
+.history-evidence--insufficient { border-left-color: var(--color-text-muted); }
 
 .history-evidence__header {
   display: flex;

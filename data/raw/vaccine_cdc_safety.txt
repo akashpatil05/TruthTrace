@@ -1,0 +1,11 @@
+Title: CDC Safety and Efficacy Profile of COVID-19 mRNA Vaccines
+Source: Centers for Disease Control and Prevention (CDC)
+URL: https://www.cdc.gov/coronavirus/2019-ncov/vaccines/safety/safety-of-vaccines.html
+Date: 2023-11-04
+Category: health
+Source-Type: government_agency
+Reliability: VERY_HIGH
+
+COVID-19 vaccines available in the United States are safe and effective at protecting people from getting severely ill, being hospitalized, and dying. Millions of people in the United States have received COVID-19 vaccines under the most intense safety monitoring in U.S. history.
+
+CDC and FDA monitor adverse events through reporting systems such as VAERS and V-safe. The scientific evidence confirms that serious safety problems following vaccination are rare. Claims that mRNA vaccines alter human DNA or contain microchips are biologically impossible and contradicted by extensive laboratory and clinical analyses. The benefits of vaccination continue to outweigh known and potential risks.

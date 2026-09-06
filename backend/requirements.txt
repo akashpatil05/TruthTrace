@@ -1,0 +1,26 @@
+# Core Web Framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.8.0
+pydantic-settings>=2.4.0
+python-dotenv>=1.0.1
+
+# Tokenization & Text Processing
+tiktoken>=0.7.0
+
+# Vector Search & Embeddings
+sentence-transformers>=3.0.0
+faiss-cpu>=1.10.0
+
+# HTTP & Testing
+httpx>=0.27.0
+requests>=2.31.0
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+
+# News & Feed Processing
+feedparser>=6.0.10
+apscheduler>=3.10.4
+
+# LLM — Google Gemini (uses current google.genai SDK)
+google-genai>=1.0.0

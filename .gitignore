@@ -1,0 +1,31 @@
+# ── Secrets (NEVER commit) ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Python ─────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+.venv-1/
+venv/
+*.egg-info/
+dist/
+.pytest_cache/
+.mypy_cache/
+
+# ── Node / Frontend ────────────────────────────────────────────────────────────
+node_modules/
+Frontend/node_modules/
+
+# ── Data — keep seeded FAISS index but ignore ingested raw cache ───────────────
+# Commit: data/vector_store/ (seeded KB for cold-start), data/raw/ seed files
+# Ignore: seen_urls cache (regenerated automatically)
+data/processed/seen_urls.json
+data/processed/ingested_articles.json
+
+# ── Misc ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
