@@ -2,6 +2,7 @@
 Verification API Route Handlers.
 """
 
+import asyncio
 from fastapi import APIRouter, HTTPException, status
 from app.models.schemas import VerificationRequest, VerificationResponse
 from app.services.verification import verification_service
@@ -19,7 +20,8 @@ async def verify_claim(payload: VerificationRequest) -> VerificationResponse:
     4. Structured verdict: TRUE, FALSE, MISLEADING, or INSUFFICIENT_EVIDENCE
     """
     try:
-        return verification_service.verify(payload)
+        # Run in worker threadpool so event loop and health checks are never blocked
+        return await asyncio.to_thread(verification_service.verify, payload)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
