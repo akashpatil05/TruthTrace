@@ -2,7 +2,25 @@
  * TruthTrace API Client Service
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001/api';
+// In production, default to the live Render backend URL.
+// In development, allow localhost fallback if no env variable is set.
+const getBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && envUrl.trim()) {
+    const clean = envUrl.trim().replace(/\/+$/, '');
+    return clean.endsWith('/api') ? clean : `${clean}/api`;
+  }
+  
+  // If running locally in development mode (vite dev)
+  if (import.meta.env.DEV) {
+    return 'http://127.0.0.1:8001/api';
+  }
+
+  // Default production fallback: live deployed Render backend
+  return 'https://truthtrace-api-rdd5.onrender.com/api';
+};
+
+const BASE_URL = getBaseUrl();
 
 export async function verifyClaim(text) {
   try {
@@ -21,20 +39,22 @@ export async function verifyClaim(text) {
 
     return await response.json();
   } catch (error) {
-    // Fallback attempt via relative proxy /api/verify
-    try {
-      const fallbackResponse = await fetch('/api/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text }),
-      });
-      if (fallbackResponse.ok) {
-        return await fallbackResponse.json();
+    // If running on custom domain or proxy setup, try relative path as last resort
+    if (BASE_URL.startsWith('http')) {
+      try {
+        const fallbackResponse = await fetch('/api/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text }),
+        });
+        if (fallbackResponse.ok) {
+          return await fallbackResponse.json();
+        }
+      } catch (_) {
+        // ignore fallback error and throw original error
       }
-    } catch (_) {
-      // ignore fallback error and throw original
     }
     throw error;
   }

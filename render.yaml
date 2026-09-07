@@ -44,4 +44,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        sync: false
+        value: "https://truthtrace-api-rdd5.onrender.com/api"
