@@ -44,6 +44,10 @@ STOP_WORDS: Set[str] = {
     "happen", "happened", "tell", "me", "whether", "true", "false", "really"
 }
 
+# In-memory LRU cache for ultra-fast repeated verification responses
+_VERIFY_CACHE: Dict[str, Tuple[float, VerificationResponse]] = {}
+_CACHE_TTL_SEC = 300  # 5 minutes TTL
+
 
 class VerificationService:
     """Verifies claims using evidence retrieved from the FAISS vector database."""
@@ -106,20 +110,15 @@ class VerificationService:
         top_k_per_query: int = 5,
         news_only: bool = False,
     ) -> List[SearchResult]:
-        """Execute multi-query semantic search across the FAISS vector index.
-
-        Args:
-            claim: The normalized claim text to search for.
-            top_k_per_query: How many chunks to retrieve per query variant.
-            news_only: If True, restrict results to chunks with category='news'.
-        """
+        """Execute multi-query semantic search across the FAISS vector index with vectorized batch embedding."""
         queries = self.generate_retrieval_queries(claim)
         all_results: Dict[str, SearchResult] = {}
-
         category_filter = "news" if news_only else None
 
-        for q in queries:
-            q_vec = self.embedding_service.embed_query(q)
+        # Vectorized batch embedding for all query variants in a single C++ call
+        q_vecs = self.embedding_service.embed_texts(queries)
+
+        for q_vec in q_vecs:
             if category_filter:
                 results = self.vector_store.search_filtered(q_vec, top_k=top_k_per_query, category=category_filter)
             else:
@@ -130,8 +129,7 @@ class VerificationService:
                     all_results[cid] = res
 
         # Sort by similarity score descending
-        sorted_results = sorted(all_results.values(), key=lambda r: r.score, reverse=True)
-        return sorted_results
+        return sorted(all_results.values(), key=lambda r: r.score, reverse=True)
 
 
     def _evaluate_chunk_stance(
@@ -336,6 +334,16 @@ class VerificationService:
         top_k = getattr(req, "top_k", 5)
         news_only = getattr(req, "news_only", False)
 
+        # ── Step 0: In-Memory LRU Cache Check (sub-millisecond instant hit) ─────
+        cache_key = f"{normalized.lower()}:{top_k}:{news_only}"
+        now = time.time()
+        if cache_key in _VERIFY_CACHE:
+            cached_time, cached_resp = _VERIFY_CACHE[cache_key]
+            if now - cached_time < _CACHE_TTL_SEC:
+                resp_dict = cached_resp.model_dump()
+                resp_dict["processing_time_ms"] = round((time.time() - start_time) * 1000, 2)
+                return VerificationResponse(**resp_dict)
+
         # ── Step 1: FAISS retrieval ─────────────────────────────────────────────
         candidates = self.retrieve_evidence(normalized, top_k_per_query=top_k, news_only=news_only)
         relevant_candidates = [r for r in candidates if r.score >= MIN_SEMANTIC_THRESHOLD]
@@ -407,7 +415,7 @@ class VerificationService:
             summary = heuristic["summary"]
             reasoning = heuristic["reasoning"]
 
-        return VerificationResponse(
+        response = VerificationResponse(
             verdict=verdict,
             confidence=confidence,
             summary=summary,
@@ -420,6 +428,13 @@ class VerificationService:
             news_sources_used=news_sources_used,
             llm_powered=llm_powered,
         )
+
+        # Store in LRU cache (keep max 200 items)
+        _VERIFY_CACHE[cache_key] = (now, response)
+        if len(_VERIFY_CACHE) > 200:
+            _VERIFY_CACHE.pop(next(iter(_VERIFY_CACHE)))
+
+        return response
 
 
 # Global singleton instance

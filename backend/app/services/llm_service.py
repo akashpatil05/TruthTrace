@@ -1,17 +1,9 @@
 """
-LLM Service — Google Gemini integration for TruthTrace.
+LLM Service — Google Gemini integration for TruthTrace (High-Speed Optimized).
 
-Uses the current `google-genai` SDK (google.genai), which supersedes
-the deprecated `google-generativeai` package.
-
-Flow:
-    FAISS evidence chunks
-          ↓
-    Gemini (gemini-2.0-flash) with structured JSON prompt
-          ↓
-    {verdict, confidence, summary, reasoning, evidence_assessment}
-          ↓
-    Falls back to heuristic engine if GEMINI_API_KEY is not set or call fails
+Uses the current `google-genai` SDK (google.genai).
+Optimized for low-latency JSON reasoning with strict token budgeting and
+native system instruction caching.
 """
 
 from __future__ import annotations
@@ -19,50 +11,43 @@ from __future__ import annotations
 import json
 import logging
 from typing import Any, Dict, List, Optional
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 # ── Prompt template ────────────────────────────────────────────────────────────
 
 _SYSTEM_INSTRUCTION = """You are TruthTrace, an expert AI fact-checker.
-
-Your job is to evaluate a factual claim using ONLY the evidence excerpts provided.
-You must NOT use any outside knowledge — every conclusion must cite the provided evidence.
+Evaluate the factual claim using ONLY the provided evidence excerpts. Do NOT use outside knowledge.
 
 Rules:
-- If the evidence clearly supports the claim → verdict: TRUE
-- If the evidence clearly refutes the claim → verdict: FALSE
-- If evidence both supports and refutes → verdict: MISLEADING
-- If evidence is insufficient or unrelated → verdict: INSUFFICIENT_EVIDENCE
-- confidence must be between 0.0 and 1.0
-- reasoning must be a list of 2–4 concise, evidence-grounded sentences
-- evidence_assessment must list each snippet's stance
+- Clearly supports claim -> verdict: "TRUE"
+- Clearly refutes claim -> verdict: "FALSE"
+- Conflicting evidence -> verdict: "MISLEADING"
+- Insufficient / unrelated -> verdict: "INSUFFICIENT_EVIDENCE"
+- confidence: float between 0.0 and 1.0
+- reasoning: 2-3 concise, grounded sentences
+- summary: 1 clear sentence citing the primary source
 
-Respond ONLY with valid JSON matching this exact schema — no markdown, no extra text:
+Respond strictly with valid JSON:
 {
   "verdict": "TRUE" | "FALSE" | "MISLEADING" | "INSUFFICIENT_EVIDENCE",
-  "confidence": float,
-  "summary": "One sentence verdict summary citing source name.",
-  "reasoning": ["sentence 1", "sentence 2", "..."],
-  "evidence_assessment": [
-    {"snippet_index": 0, "source": "...", "stance": "SUPPORT" | "CONTRADICT" | "NEUTRAL", "reason": "..."},
-    ...
-  ]
+  "confidence": 0.95,
+  "summary": "Source states that...",
+  "reasoning": ["point 1", "point 2"]
 }"""
 
 
 def _build_user_prompt(claim: str, evidence_snippets: List[Dict[str, Any]]) -> str:
-    lines = [f'CLAIM TO VERIFY:\n"{claim}"\n\nEVIDENCE EXCERPTS:']
-    for i, ev in enumerate(evidence_snippets):
+    # Limit to top 3 most relevant snippets to keep prompt lightweight and fast
+    top_snippets = evidence_snippets[:3]
+    lines = [f'CLAIM: "{claim}"\n\nEVIDENCE:']
+    for i, ev in enumerate(top_snippets):
         lines.append(
-            f"\n[{i}] Source: {ev.get('source', 'Unknown')} | "
-            f"Reliability: {ev.get('reliability', 'HIGH')} | "
-            f"Date: {ev.get('date', 'unknown')} | "
-            f"Category: {ev.get('category', 'general')}\n"
-            f"Similarity score: {ev.get('score', 0.0):.3f}\n"
-            f'Text: "{ev.get("text", "")[:400]}"'
+            f"[{i+1}] {ev.get('source', 'Unknown')} ({ev.get('date', 'Recent')}):\n"
+            f'"{ev.get("text", "")[:300]}"'
         )
-    lines.append("\nRespond with JSON only.")
+    lines.append("\nReturn JSON verdict.")
     return "\n".join(lines)
 
 
@@ -70,53 +55,32 @@ def _build_user_prompt(claim: str, evidence_snippets: List[Dict[str, Any]]) -> s
 
 class GeminiLLMService:
     """
-    Wraps Google Gemini (google.genai SDK) for structured fact-check verdicts.
-
-    Usage:
-        from app.services.llm_service import llm_service
-
-        result = llm_service.analyze(
-            claim="WHO declared COVID-19 a pandemic in 2020",
-            evidence_snippets=[{"source": "BBC", "text": "...", "score": 0.82, ...}]
-        )
-        if result:
-            print(result["verdict"], result["confidence"])
+    High-Speed Google Gemini service (google.genai SDK).
     """
 
     def __init__(self):
         self._client = None
-        self._model_name: Optional[str] = None
+        self._model_name = None
         self._available: Optional[bool] = None
 
     def _init_client(self):
-        """Lazy-initialize Gemini client on first use."""
-        if self._available is not None:
-            return
-
         try:
             from google import genai
-            from app.config import settings  # re-read on every init so .env changes take effect
-
             if not settings.GEMINI_API_KEY:
-                logger.info("GEMINI_API_KEY not set — using heuristic verdict engine.")
                 self._available = False
                 return
 
             self._client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            self._model_name = settings.GEMINI_MODEL   # picked up fresh from .env every time
+            self._model_name = settings.GEMINI_MODEL or "gemini-3.5-flash-lite"
             self._available = True
             logger.info(f"Gemini LLM service ready (model: {self._model_name})")
 
-        except ImportError:
-            logger.warning("google-genai not installed. Run: pip install google-genai")
-            self._available = False
         except Exception as exc:
             logger.error(f"Failed to initialize Gemini client: {exc}")
             self._available = False
 
     @property
     def is_available(self) -> bool:
-        """True if a valid GEMINI_API_KEY is configured and the SDK is installed."""
         if self._available is None:
             self._init_client()
         return bool(self._available)
@@ -127,16 +91,7 @@ class GeminiLLMService:
         evidence_snippets: List[Dict[str, Any]],
     ) -> Optional[Dict[str, Any]]:
         """
-        Send claim + evidence to Gemini and return a structured verdict dict.
-
-        Args:
-            claim: Normalized claim text.
-            evidence_snippets: List of dicts with keys: text, source, score,
-                               reliability, date, category, url.
-
-        Returns:
-            Dict with: verdict, confidence, summary, reasoning, evidence_assessment
-            Returns None if Gemini is unavailable or the call fails (triggers fallback).
+        Send claim + top evidence snippets to Gemini and return structured verdict.
         """
         if not self.is_available or not evidence_snippets:
             return None
@@ -146,29 +101,22 @@ class GeminiLLMService:
 
         prompt = _build_user_prompt(claim, evidence_snippets)
 
-        # Combine system instruction + user prompt into a single contents list
-        contents = [
-            types.Content(
-                role="user",
-                parts=[types.Part(text=_SYSTEM_INSTRUCTION + "\n\n" + prompt)],
-            )
-        ]
-
+        # Use native system_instruction configuration for fast server-side caching
         config = types.GenerateContentConfig(
+            system_instruction=_SYSTEM_INSTRUCTION,
             response_mime_type="application/json",
-            temperature=0.1,
-            max_output_tokens=1024,
+            temperature=0.0,
+            max_output_tokens=300,
         )
 
         try:
             response = self._client.models.generate_content(
                 model=self._model_name,
-                contents=contents,
+                contents=prompt,
                 config=config,
             )
             raw = response.text.strip() if response.text else ""
 
-            # Strip markdown fences if accidentally present
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
                 if raw.startswith("json"):
@@ -179,26 +127,21 @@ class GeminiLLMService:
 
             # Validate required fields
             required = {"verdict", "confidence", "summary", "reasoning"}
-            missing = required - result.keys()
-            if missing:
-                logger.warning(f"Gemini response missing fields: {missing}")
+            if not required.issubset(result.keys()):
+                logger.warning("Gemini response missing fields, falling back to heuristic")
                 return None
 
-            # Clamp + validate
             result["confidence"] = max(0.0, min(1.0, float(result["confidence"])))
             valid_verdicts = {"TRUE", "FALSE", "MISLEADING", "INSUFFICIENT_EVIDENCE"}
             if result["verdict"] not in valid_verdicts:
-                result["verdict"] = "INSUFFICIENT_EVIDENCE"
+                return None
 
             return result
 
-        except json.JSONDecodeError as exc:
-            logger.error(f"Gemini returned non-JSON: {exc}")
-            return None
         except Exception as exc:
-            logger.error(f"Gemini API call failed: {exc}")
+            logger.warning(f"Gemini API call error: {exc}")
             return None
 
 
-# ── Singleton ──────────────────────────────────────────────────────────────────
+# Singleton default LLM service
 llm_service = GeminiLLMService()
