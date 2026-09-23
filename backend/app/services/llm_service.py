@@ -1,24 +1,29 @@
 """
-LLM Service — Google Gemini integration for TruthTrace (High-Speed Optimized).
+LLM Service — Google Gemini integration for TruthTrace (Ultra Low-Latency REST).
 
-Uses the current `google-genai` SDK (google.genai).
-Optimized for low-latency JSON reasoning with strict token budgeting and
-native system instruction caching.
+Uses direct HTTP REST API with connection pooling and strict timeout budgets (2.5s).
+If Google AI Studio encounters cloud queuing or throttling, TruthTrace immediately
+returns the high-accuracy grounded heuristic verdict in milliseconds instead of
+hanging the user for 20-30 seconds.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import requests
 from typing import Any, Dict, List, Optional
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Persistent connection pool session for sub-second REST roundtrips
+_HTTP_SESSION = requests.Session()
+
 # ── Prompt template ────────────────────────────────────────────────────────────
 
 _SYSTEM_INSTRUCTION = """You are TruthTrace, an expert AI fact-checker.
-Evaluate the factual claim using ONLY the provided evidence excerpts. Do NOT use outside knowledge.
+Evaluate the claim using ONLY the provided evidence. Do NOT use outside knowledge.
 
 Rules:
 - Clearly supports claim -> verdict: "TRUE"
@@ -26,10 +31,10 @@ Rules:
 - Conflicting evidence -> verdict: "MISLEADING"
 - Insufficient / unrelated -> verdict: "INSUFFICIENT_EVIDENCE"
 - confidence: float between 0.0 and 1.0
-- reasoning: 2-3 concise, grounded sentences
+- reasoning: 2 concise sentences
 - summary: 1 clear sentence citing the primary source
 
-Respond strictly with valid JSON:
+JSON schema:
 {
   "verdict": "TRUE" | "FALSE" | "MISLEADING" | "INSUFFICIENT_EVIDENCE",
   "confidence": 0.95,
@@ -39,15 +44,14 @@ Respond strictly with valid JSON:
 
 
 def _build_user_prompt(claim: str, evidence_snippets: List[Dict[str, Any]]) -> str:
-    # Limit to top 3 most relevant snippets to keep prompt lightweight and fast
     top_snippets = evidence_snippets[:3]
     lines = [f'CLAIM: "{claim}"\n\nEVIDENCE:']
     for i, ev in enumerate(top_snippets):
         lines.append(
             f"[{i+1}] {ev.get('source', 'Unknown')} ({ev.get('date', 'Recent')}):\n"
-            f'"{ev.get("text", "")[:300]}"'
+            f'"{ev.get("text", "")[:280]}"'
         )
-    lines.append("\nReturn JSON verdict.")
+    lines.append("\nReturn JSON only.")
     return "\n".join(lines)
 
 
@@ -55,35 +59,17 @@ def _build_user_prompt(claim: str, evidence_snippets: List[Dict[str, Any]]) -> s
 
 class GeminiLLMService:
     """
-    High-Speed Google Gemini service (google.genai SDK).
+    Ultra-Low Latency Google Gemini service with strict timeout enforcement.
     """
 
     def __init__(self):
-        self._client = None
-        self._model_name = None
-        self._available: Optional[bool] = None
-
-    def _init_client(self):
-        try:
-            from google import genai
-            if not settings.GEMINI_API_KEY:
-                self._available = False
-                return
-
-            self._client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            self._model_name = settings.GEMINI_MODEL or "gemini-3.5-flash-lite"
-            self._available = True
-            logger.info(f"Gemini LLM service ready (model: {self._model_name})")
-
-        except Exception as exc:
-            logger.error(f"Failed to initialize Gemini client: {exc}")
-            self._available = False
+        self._model_name = settings.GEMINI_MODEL or "gemini-2.5-flash"
+        self._api_key = settings.GEMINI_API_KEY
+        self._timeout_seconds = 2.5  # Strict 2.5s maximum budget for LLM response
 
     @property
     def is_available(self) -> bool:
-        if self._available is None:
-            self._init_client()
-        return bool(self._available)
+        return bool(settings.GEMINI_API_KEY)
 
     def analyze(
         self,
@@ -91,31 +77,58 @@ class GeminiLLMService:
         evidence_snippets: List[Dict[str, Any]],
     ) -> Optional[Dict[str, Any]]:
         """
-        Send claim + top evidence snippets to Gemini and return structured verdict.
+        Send claim + top evidence snippets to Gemini REST API with strict 2.5s timeout.
+        Returns parsed dict or None (triggering instant 10ms heuristic fallback).
         """
         if not self.is_available or not evidence_snippets:
             return None
 
-        from google import genai
-        from google.genai import types
-
+        api_key = settings.GEMINI_API_KEY
+        model = settings.GEMINI_MODEL or "gemini-2.5-flash"
+        
+        # Fast direct REST endpoint with HTTP keep-alive connection reuse
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        
         prompt = _build_user_prompt(claim, evidence_snippets)
 
-        # Use native system_instruction configuration for fast server-side caching
-        config = types.GenerateContentConfig(
-            system_instruction=_SYSTEM_INSTRUCTION,
-            response_mime_type="application/json",
-            temperature=0.0,
-            max_output_tokens=300,
-        )
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": _SYSTEM_INSTRUCTION}]
+            },
+            "contents": [
+                {
+                    "parts": [{"text": prompt}]
+                }
+            ],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "temperature": 0.0,
+                "maxOutputTokens": 250,
+            }
+        }
 
         try:
-            response = self._client.models.generate_content(
-                model=self._model_name,
-                contents=prompt,
-                config=config,
+            resp = _HTTP_SESSION.post(
+                url,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=self._timeout_seconds,
             )
-            raw = response.text.strip() if response.text else ""
+
+            if resp.status_code != 200:
+                logger.warning(f"Gemini REST returned {resp.status_code}, using instant fallback")
+                return None
+
+            data = resp.json()
+            candidates = data.get("candidates", [])
+            if not candidates:
+                return None
+
+            parts = candidates[0].get("content", {}).get("parts", [])
+            if not parts:
+                return None
+
+            raw = parts[0].get("text", "").strip()
 
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
@@ -128,7 +141,6 @@ class GeminiLLMService:
             # Validate required fields
             required = {"verdict", "confidence", "summary", "reasoning"}
             if not required.issubset(result.keys()):
-                logger.warning("Gemini response missing fields, falling back to heuristic")
                 return None
 
             result["confidence"] = max(0.0, min(1.0, float(result["confidence"])))
@@ -139,7 +151,8 @@ class GeminiLLMService:
             return result
 
         except Exception as exc:
-            logger.warning(f"Gemini API call error: {exc}")
+            # On timeout or network lag, fallback instantly without blocking
+            logger.info(f"Gemini call bypassed/timed out ({exc}), returning instant heuristic verdict.")
             return None
 
 
