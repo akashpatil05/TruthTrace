@@ -162,6 +162,27 @@ CURATED_RSS_FEEDS = [
         "source_type": SourceType.MAINSTREAM_NEWS,
         "reliability": ReliabilityLevel.HIGH,
     },
+    {
+        "name": "Aaj Tak - Latest News",
+        "url": "https://www.aajtak.in/rssfeeds/?id=home",
+        "category": "news",
+        "source_type": SourceType.NEWS_WIRE,
+        "reliability": ReliabilityLevel.HIGH,
+    },
+    {
+        "name": "India Today - National News",
+        "url": "https://www.indiatoday.in/rss/1206514",
+        "category": "national",
+        "source_type": SourceType.NEWS_WIRE,
+        "reliability": ReliabilityLevel.HIGH,
+    },
+    {
+        "name": "India Today - Top Stories",
+        "url": "https://www.indiatoday.in/rss/1206584",
+        "category": "international",
+        "source_type": SourceType.NEWS_WIRE,
+        "reliability": ReliabilityLevel.HIGH,
+    },
 ]
 
 
